@@ -20,7 +20,21 @@ export function useBranches() {
   return useQuery({
     queryKey: ['branches'],
     queryFn: async () => {
-      // Only fetch branches that have an active branch_admin
+      const { data, error } = await supabase
+        .from('branches')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data as Branch[];
+    },
+  });
+}
+
+export function useAdminBranches() {
+  return useQuery({
+    queryKey: ['admin-branches'],
+    queryFn: async () => {
       const { data: admins, error: adminsError } = await supabase
         .from('branch_admins')
         .select('branch_id');
@@ -28,7 +42,6 @@ export function useBranches() {
       if (adminsError) throw adminsError;
       
       const activeBranchIds = (admins || []).map(a => a.branch_id);
-      
       if (activeBranchIds.length === 0) return [] as Branch[];
       
       const { data, error } = await supabase
