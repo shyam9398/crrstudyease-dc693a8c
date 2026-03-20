@@ -1,0 +1,1 @@
+DELETE FROM branches WHERE id = '33ffe44e-28f0-4092-b268-1f8db8ff32a3';
