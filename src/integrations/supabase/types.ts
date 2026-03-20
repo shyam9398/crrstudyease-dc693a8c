@@ -56,6 +56,41 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_admins: {
+        Row: {
+          branch_id: string
+          created_at: string
+          id: string
+          is_super_admin: boolean
+          password_credential: string
+          user_id_credential: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          id?: string
+          is_super_admin?: boolean
+          password_credential: string
+          user_id_credential: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          id?: string
+          is_super_admin?: boolean
+          password_credential?: string
+          user_id_credential?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_admins_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: true
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           created_at: string
