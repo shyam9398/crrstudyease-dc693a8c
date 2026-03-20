@@ -12,7 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, password, branchId } = await req.json();
+    const { userId: rawUserId, password: rawPassword, branchId } = await req.json();
+    const userId = (rawUserId || "").trim();
+    const password = (rawPassword || "").trim();
 
     if (!branchId || !userId || !password) {
       return new Response(
