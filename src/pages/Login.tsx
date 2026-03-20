@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBranches, useAdminBranches, useRegulations } from '@/hooks/useBranchesAndRegulations';
+import { useBranches, useRegulations } from '@/hooks/useBranchesAndRegulations';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,6 @@ const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const { data: branches = [], isLoading: branchesLoading } = useBranches();
-  const { data: adminBranches = [], isLoading: adminBranchesLoading } = useAdminBranches();
   const { data: regulations = [], isLoading: regulationsLoading } = useRegulations();
 
   const [selectedRole, setSelectedRole] = useState<RoleSelection>(null);
@@ -212,10 +211,10 @@ const Login = () => {
                           <SelectValue placeholder="Select your branch" />
                         </SelectTrigger>
                         <SelectContent>
-                          {adminBranchesLoading ? (
+                          {branchesLoading ? (
                             <SelectItem value="loading" disabled>Loading...</SelectItem>
                           ) : (
-                            adminBranches.map((branch) => (
+                            branches.map((branch) => (
                               <SelectItem key={branch.id} value={branch.id}>
                                 {branch.name}
                               </SelectItem>
@@ -238,7 +237,7 @@ const Login = () => {
                 {adminStep === 2 && (
                   <>
                     <p className="text-sm text-center text-muted-foreground">
-                      Branch: {adminBranches.find(b => b.id === adminBranch)?.name}
+                      Branch: {branches.find(b => b.id === adminBranch)?.name}
                     </p>
                     <div className="space-y-2">
                       <Label>User ID</Label>
