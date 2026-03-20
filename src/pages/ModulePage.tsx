@@ -149,7 +149,8 @@ const ModulePage = () => {
   const subject = moduleData.units?.subjects;
   const unit = moduleData.units;
   const resources = moduleData.resources || [];
-  const canAddResources = isFaculty;
+  const isSubjectOwner = isFaculty && subject?.created_by === user?.id;
+  const canAddResources = isSubjectOwner;
   const canEditResource = (createdBy: string) => isFaculty && createdBy === user?.id;
   const isCompleted = progress?.completed || false;
 
