@@ -24,6 +24,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const { data: branches = [], isLoading: branchesLoading } = useBranches();
+  const { data: adminBranches = [], isLoading: adminBranchesLoading } = useAdminBranches();
   const { data: regulations = [], isLoading: regulationsLoading } = useRegulations();
 
   const [selectedRole, setSelectedRole] = useState<RoleSelection>(null);
