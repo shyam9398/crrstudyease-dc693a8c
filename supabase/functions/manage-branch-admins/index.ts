@@ -213,7 +213,7 @@ serve(async (req) => {
       // Don't allow deleting super admin
       const { data: target } = await supabase
         .from("branch_admins")
-        .select("is_super_admin")
+        .select("is_super_admin, branch_id")
         .eq("id", branchAdminId)
         .maybeSingle();
 
@@ -223,6 +223,8 @@ serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      const branchIdToDelete = target?.branch_id;
 
       const { error } = await supabase
         .from("branch_admins")
@@ -234,6 +236,11 @@ serve(async (req) => {
           JSON.stringify({ success: false, error: error.message }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      // Also delete the orphaned branch
+      if (branchIdToDelete) {
+        await supabase.from("branches").delete().eq("id", branchIdToDelete);
       }
 
       return new Response(
