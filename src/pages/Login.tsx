@@ -50,7 +50,7 @@ const Login = () => {
     setLoading(true);
     // Convert faculty code to synthetic email for auth - trim whitespace
     const trimmedCode = facultyCode.trim();
-    const syntheticEmail = `${trimmedCode.toLowerCase()}@faculty.edulearn.local`;
+    const syntheticEmail = `${trimmedCode.toLowerCase()}@faculty.studyease.local`;
     const { error } = await signIn(syntheticEmail, password);
     setLoading(false);
     if (error) {
@@ -80,6 +80,11 @@ const Login = () => {
       } else {
         sessionStorage.setItem('admin_token', data.token);
         sessionStorage.setItem('admin_branch', adminBranch);
+        if (data.isSuperAdmin) {
+          sessionStorage.setItem('is_super_admin', 'true');
+        } else {
+          sessionStorage.removeItem('is_super_admin');
+        }
         toast.success('Welcome, Admin!');
         navigate('/admin/dashboard');
       }

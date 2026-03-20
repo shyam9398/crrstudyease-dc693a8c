@@ -21,57 +21,52 @@ serve(async (req) => {
       );
     }
 
-    // Load credentials from environment secrets
-    const adminCredentials: Record<string, { userId: string; password: string }> = {
-      cse: {
-        userId: Deno.env.get("ADMIN_CSE_USERID") || "",
-        password: Deno.env.get("ADMIN_CSE_PASSWORD") || "",
-      },
-      it: {
-        userId: Deno.env.get("ADMIN_IT_USERID") || "",
-        password: Deno.env.get("ADMIN_IT_PASSWORD") || "",
-      },
-    };
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Find matching admin credentials for the branch
-    const branchKey = Object.keys(adminCredentials).find(key => {
-      const creds = adminCredentials[key];
-      return creds.userId === userId && creds.password === password;
-    });
+    // Check credentials against branch_admins table
+    const { data: adminRecord, error: queryError } = await supabase
+      .from("branch_admins")
+      .select("branch_id, is_super_admin")
+      .eq("user_id_credential", userId)
+      .eq("password_credential", password)
+      .eq("branch_id", branchId)
+      .maybeSingle();
 
-    if (branchKey) {
-      const token = crypto.randomUUID();
-
-      // Store token in admin_tokens table with 30-minute expiry
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-
-      const { error: insertError } = await supabase
-        .from("admin_tokens")
-        .insert({ token, branch_id: branchKey, expires_at: expiresAt });
-
-      if (insertError) {
-        console.error("Token insert error:", insertError);
-        return new Response(
-          JSON.stringify({ success: false, error: "Server error" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
+    if (queryError || !adminRecord) {
       return new Response(
-        JSON.stringify({ success: true, token, branchId }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "Invalid admin credentials for this branch" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+    const { error: insertError } = await supabase
+      .from("admin_tokens")
+      .insert({ token, branch_id: branchId, expires_at: expiresAt });
+
+    if (insertError) {
+      console.error("Token insert error:", insertError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Server error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ success: false, error: "Invalid admin credentials for this branch" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ 
+        success: true, 
+        token, 
+        branchId,
+        isSuperAdmin: adminRecord.is_super_admin 
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    console.error("Admin login error:", error);
     return new Response(
       JSON.stringify({ success: false, error: "Server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
