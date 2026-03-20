@@ -237,7 +237,7 @@ const Login = () => {
                 {adminStep === 2 && (
                   <>
                     <p className="text-sm text-center text-muted-foreground">
-                      Branch: {adminBranches.find(b => b.id === adminBranch)?.name}
+                      Branch: {branches.find(b => b.id === adminBranch)?.name}
                     </p>
                     <div className="space-y-2">
                       <Label>User ID</Label>
