@@ -212,10 +212,10 @@ const Login = () => {
                           <SelectValue placeholder="Select your branch" />
                         </SelectTrigger>
                         <SelectContent>
-                          {branchesLoading ? (
+                          {adminBranchesLoading ? (
                             <SelectItem value="loading" disabled>Loading...</SelectItem>
                           ) : (
-                            branches.map((branch) => (
+                            adminBranches.map((branch) => (
                               <SelectItem key={branch.id} value={branch.id}>
                                 {branch.name}
                               </SelectItem>
