@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Shield, LogOut, Users, BookOpen, GitBranch, FileText, Plus, Eye, EyeOff, Trash2, RefreshCw, Pencil } from 'lucide-react';
+import { Shield, LogOut, Users, BookOpen, GitBranch, FileText, Plus, Eye, EyeOff, Trash2, RefreshCw, Pencil, Crown } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useBranches, useRegulations } from '@/hooks/useBranchesAndRegulations';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,9 +30,19 @@ interface FacultyEntry {
   created_at: string;
 }
 
+interface BranchAdmin {
+  id: string;
+  branch_id: string;
+  branch_name: string;
+  user_id_credential: string;
+  is_super_admin: boolean;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminBranchId, setAdminBranchId] = useState('');
   const { data: branches = [] } = useBranches();
   const { data: regulations = [] } = useRegulations();
@@ -56,6 +66,17 @@ const AdminDashboard = () => {
   const [editPassword, setEditPassword] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editing, setEditing] = useState(false);
+
+  // Super Admin: Branch admin management
+  const [branchAdmins, setBranchAdmins] = useState<BranchAdmin[]>([]);
+  const [showCreateBranchAdmin, setShowCreateBranchAdmin] = useState(false);
+  const [newBranchName, setNewBranchName] = useState('');
+  const [newAdminUserId, setNewAdminUserId] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [showNewAdminPassword, setShowNewAdminPassword] = useState(false);
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [deleteAdminTarget, setDeleteAdminTarget] = useState<BranchAdmin | null>(null);
+  const [deletingAdmin, setDeletingAdmin] = useState(false);
 
   const branchName = branches.find(b => b.id === adminBranchId)?.name || 'Unknown Branch';
 
@@ -85,21 +106,47 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchBranchAdmins = async () => {
+    try {
+      const adminToken = sessionStorage.getItem('admin_token');
+      const { data, error } = await supabase.functions.invoke('manage-branch-admins', {
+        body: { adminToken, action: 'list' },
+      });
+
+      if (error) {
+        console.error('Failed to fetch branch admins');
+        return;
+      }
+
+      if (data?.success) {
+        setBranchAdmins(data.admins || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch branch admins:', err);
+    }
+  };
+
   useEffect(() => {
     const token = sessionStorage.getItem('admin_token');
     const branchId = sessionStorage.getItem('admin_branch');
+    const superAdmin = sessionStorage.getItem('is_super_admin') === 'true';
     if (!token || !branchId) {
       navigate('/', { replace: true });
       return;
     }
     setAdminBranchId(branchId);
+    setIsSuperAdmin(superAdmin);
     setIsAuthorized(true);
     fetchData(branchId);
+    if (superAdmin) {
+      fetchBranchAdmins();
+    }
   }, [navigate]);
 
   const handleLogout = () => {
     sessionStorage.removeItem('admin_token');
     sessionStorage.removeItem('admin_branch');
+    sessionStorage.removeItem('is_super_admin');
     navigate('/', { replace: true });
   };
 
@@ -108,12 +155,10 @@ const AdminDashboard = () => {
       toast.error('Please fill in all fields');
       return;
     }
-
     if (newFacultyPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
     }
-
     setCreating(true);
     try {
       const adminToken = sessionStorage.getItem('admin_token');
@@ -127,7 +172,6 @@ const AdminDashboard = () => {
       });
 
       if (error) {
-        // Parse error context from non-2xx responses
         let msg = 'Failed to create faculty account';
         try {
           const ctx = error.context ? await error.context.json() : null;
@@ -155,10 +199,7 @@ const AdminDashboard = () => {
     try {
       const adminToken = sessionStorage.getItem('admin_token');
       const { data, error } = await supabase.functions.invoke('delete-faculty', {
-        body: {
-          adminToken,
-          facultyUserId: deleteTarget.id,
-        },
+        body: { adminToken, facultyUserId: deleteTarget.id },
       });
 
       if (error) {
@@ -230,6 +271,80 @@ const AdminDashboard = () => {
     setEditing(false);
   };
 
+  const handleCreateBranchAdmin = async () => {
+    if (!newBranchName || !newAdminUserId || !newAdminPassword) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    setCreatingAdmin(true);
+    try {
+      const adminToken = sessionStorage.getItem('admin_token');
+      const { data, error } = await supabase.functions.invoke('manage-branch-admins', {
+        body: {
+          adminToken,
+          action: 'create_branch_admin',
+          branchName: newBranchName,
+          userIdCredential: newAdminUserId,
+          passwordCredential: newAdminPassword,
+        },
+      });
+
+      if (error) {
+        let msg = 'Failed to create branch admin';
+        try {
+          const ctx = error.context ? await error.context.json() : null;
+          if (ctx?.error) msg = ctx.error;
+        } catch { /* ignore */ }
+        toast.error(msg);
+      } else if (!data?.success) {
+        toast.error(data?.error || 'Failed to create branch admin');
+      } else {
+        toast.success('Branch admin created successfully!');
+        setNewBranchName('');
+        setNewAdminUserId('');
+        setNewAdminPassword('');
+        setShowCreateBranchAdmin(false);
+        fetchBranchAdmins();
+      }
+    } catch {
+      toast.error('Failed to create branch admin');
+    }
+    setCreatingAdmin(false);
+  };
+
+  const handleDeleteBranchAdmin = async () => {
+    if (!deleteAdminTarget) return;
+    setDeletingAdmin(true);
+    try {
+      const adminToken = sessionStorage.getItem('admin_token');
+      const { data, error } = await supabase.functions.invoke('manage-branch-admins', {
+        body: {
+          adminToken,
+          action: 'delete',
+          branchAdminId: deleteAdminTarget.id,
+        },
+      });
+
+      if (error) {
+        let msg = 'Failed to delete branch admin';
+        try {
+          const ctx = error.context ? await error.context.json() : null;
+          if (ctx?.error) msg = ctx.error;
+        } catch { /* ignore */ }
+        toast.error(msg);
+      } else if (!data?.success) {
+        toast.error(data?.error || 'Failed to delete branch admin');
+      } else {
+        toast.success('Branch admin deleted successfully');
+        setDeleteAdminTarget(null);
+        fetchBranchAdmins();
+      }
+    } catch {
+      toast.error('Failed to delete branch admin');
+    }
+    setDeletingAdmin(false);
+  };
+
   if (!isAuthorized) return null;
 
   return (
@@ -248,19 +363,21 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                {isSuperAdmin ? <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> : <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />}
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-foreground">Admin Dashboard</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-foreground">
+                  {isSuperAdmin ? 'Super Admin Dashboard' : 'Admin Dashboard'}
+                </h1>
                 <p className="text-xs text-muted-foreground">{branchName}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
-                <Shield className="w-3 h-3 mr-1" />
-                Admin
+                {isSuperAdmin ? <Crown className="w-3 h-3 mr-1" /> : <Shield className="w-3 h-3 mr-1" />}
+                {isSuperAdmin ? 'Super Admin' : 'Admin'}
               </Badge>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => fetchData(adminBranchId)} title="Refresh">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => { fetchData(adminBranchId); if (isSuperAdmin) fetchBranchAdmins(); }} title="Refresh">
                 <RefreshCw className="w-4 h-4" />
               </Button>
               <ThemeToggle />
@@ -305,6 +422,125 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
+        {/* Super Admin: Branch Admin Management */}
+        {isSuperAdmin && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-primary" />
+                    Branch Admin Management
+                  </CardTitle>
+                  <CardDescription>Create and manage admin accounts for all branches</CardDescription>
+                </div>
+                <Button onClick={() => setShowCreateBranchAdmin(!showCreateBranchAdmin)} size="sm">
+                  <Plus className="w-4 h-4 mr-1" />
+                  New Branch Admin
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {showCreateBranchAdmin && (
+                <Card className="border-dashed">
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Branch Name</Label>
+                        <Input
+                          placeholder="e.g. New Department"
+                          value={newBranchName}
+                          onChange={(e) => setNewBranchName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Admin User ID</Label>
+                        <Input
+                          placeholder="e.g. DEPT1989"
+                          value={newAdminUserId}
+                          onChange={(e) => setNewAdminUserId(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Admin Password</Label>
+                        <div className="relative">
+                          <Input
+                            type={showNewAdminPassword ? 'text' : 'password'}
+                            placeholder="Password"
+                            value={newAdminPassword}
+                            onChange={(e) => setNewAdminPassword(e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3"
+                            onClick={() => setShowNewAdminPassword(!showNewAdminPassword)}
+                          >
+                            {showNewAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setShowCreateBranchAdmin(false)}>Cancel</Button>
+                      <Button onClick={handleCreateBranchAdmin} disabled={creatingAdmin}>
+                        {creatingAdmin ? 'Creating...' : 'Create Branch Admin'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {branchAdmins.length > 0 ? (
+                <div className="rounded-md border">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="p-3 text-left font-medium text-muted-foreground">Branch</th>
+                          <th className="p-3 text-left font-medium text-muted-foreground">User ID</th>
+                          <th className="p-3 text-left font-medium text-muted-foreground">Role</th>
+                          <th className="p-3 text-right font-medium text-muted-foreground">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {branchAdmins.map((admin) => (
+                          <tr key={admin.id} className="border-b last:border-0">
+                            <td className="p-3">{admin.branch_name}</td>
+                            <td className="p-3 font-mono text-xs">{admin.user_id_credential}</td>
+                            <td className="p-3">
+                              {admin.is_super_admin ? (
+                                <Badge variant="default" className="text-xs"><Crown className="w-3 h-3 mr-1" />Super Admin</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-xs">Branch Admin</Badge>
+                              )}
+                            </td>
+                            <td className="p-3 text-right">
+                              {!admin.is_super_admin && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => setDeleteAdminTarget(admin)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-6">Loading branch admins...</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Create Faculty Section */}
         <Card>
           <CardHeader>
@@ -320,7 +556,6 @@ const AdminDashboard = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Create Form */}
             {showCreateForm && (
               <Card className="border-dashed">
                 <CardContent className="pt-6 space-y-4">
@@ -365,7 +600,6 @@ const AdminDashboard = () => {
               </Card>
             )}
 
-            {/* Faculty List */}
             {facultyList.length > 0 ? (
               <div className="rounded-md border">
                 <div className="overflow-x-auto">
@@ -417,7 +651,7 @@ const AdminDashboard = () => {
         </Card>
       </main>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Faculty Confirmation Dialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -478,6 +712,28 @@ const AdminDashboard = () => {
             <AlertDialogCancel disabled={editing}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleEditFaculty} disabled={editing}>
               {editing ? 'Saving...' : 'Save Changes'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Branch Admin Confirmation Dialog */}
+      <AlertDialog open={!!deleteAdminTarget} onOpenChange={(open) => !open && setDeleteAdminTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Branch Admin</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the admin for <strong>{deleteAdminTarget?.branch_name}</strong> ({deleteAdminTarget?.user_id_credential})? This will remove their admin access.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAdmin}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteBranchAdmin}
+              disabled={deletingAdmin}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingAdmin ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
