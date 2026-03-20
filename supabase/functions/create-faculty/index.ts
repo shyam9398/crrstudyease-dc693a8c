@@ -53,7 +53,7 @@ serve(async (req) => {
     }
 
     // Generate synthetic email from faculty code
-    const syntheticEmail = `${facultyCode.toLowerCase()}@faculty.edulearn.local`;
+    const syntheticEmail = `${facultyCode.toLowerCase()}@faculty.studyease.local`;
 
     // Check if faculty code already exists
     const { data: existingProfile } = await supabase
