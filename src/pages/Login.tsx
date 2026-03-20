@@ -80,6 +80,11 @@ const Login = () => {
       } else {
         sessionStorage.setItem('admin_token', data.token);
         sessionStorage.setItem('admin_branch', adminBranch);
+        if (data.isSuperAdmin) {
+          sessionStorage.setItem('is_super_admin', 'true');
+        } else {
+          sessionStorage.removeItem('is_super_admin');
+        }
         toast.success('Welcome, Admin!');
         navigate('/admin/dashboard');
       }
