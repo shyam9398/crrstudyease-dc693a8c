@@ -1,27 +1,34 @@
-import { Link, useSearchParams, Navigate } from 'react-router-dom';
+import { Link, useSearchParams, Navigate, useNavigate } from 'react-router-dom';
 import { useStudentSubjects } from '@/hooks/useStudentData';
 import { useBranches, useRegulations } from '@/hooks/useBranchesAndRegulations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { BookOpen, ArrowLeft, GraduationCap } from 'lucide-react';
+import { BookOpen, ArrowLeft, GraduationCap, LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import collegeLogo from '@/assets/college-logo.png';
 
 const StudentDashboard = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const branchId = searchParams.get('branch');
   const regulationId = searchParams.get('regulation');
+  const yearSem = searchParams.get('year_sem');
 
   if (!branchId || !regulationId) return <Navigate to="/" replace />;
 
-  const { data: subjects = [], isLoading } = useStudentSubjects(branchId, regulationId);
+  const { data: subjects = [], isLoading } = useStudentSubjects(branchId, regulationId, yearSem || undefined);
   const { data: branches = [] } = useBranches();
   const { data: regulations = [] } = useRegulations();
 
   const branchName = branches.find(b => b.id === branchId)?.name || '';
   const regulationName = regulations.find(r => r.id === regulationId)?.name || '';
+
+  const handleLogout = () => {
+    localStorage.removeItem('student_session');
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,7 +55,7 @@ const StudentDashboard = () => {
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl font-bold text-foreground">StudyEase</h1>
-                <p className="text-xs text-muted-foreground">{branchName} • {regulationName}</p>
+                <p className="text-xs text-muted-foreground">{branchName} • {regulationName}{yearSem ? ` • ${yearSem}` : ''}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -57,6 +64,10 @@ const StudentDashboard = () => {
                 Student
               </Badge>
               <ThemeToggle />
+              <Button variant="outline" size="sm" onClick={handleLogout} className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </div>
           </div>
         </div>
@@ -75,18 +86,19 @@ const StudentDashboard = () => {
             <div className="col-span-full text-center py-16">
               <BookOpen className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No subjects yet</h3>
-              <p className="text-muted-foreground">Subjects will appear here once faculty adds them.</p>
+              <p className="text-muted-foreground">Subjects will appear here once faculty adds them for your year/semester.</p>
             </div>
           ) : (
             subjects.map((subject) => {
               const regulation = regulations.find(r => r.id === subject.regulation_id);
               return (
-                <Link key={subject.id} to={`/student/subject/${subject.id}?branch=${branchId}&regulation=${regulationId}`}>
+                <Link key={subject.id} to={`/student/subject/${subject.id}?branch=${branchId}&regulation=${regulationId}&year_sem=${yearSem}`}>
                   <Card className="group hover:shadow-lg transition-all cursor-pointer">
                     <CardHeader className="pb-3">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <Badge variant="secondary">{subject.code}</Badge>
                         {regulation && <Badge variant="outline" className="text-xs">{regulation.name}</Badge>}
+                        {(subject as any).year_sem && <Badge variant="outline" className="text-xs">{(subject as any).year_sem}</Badge>}
                       </div>
                       <CardTitle className="text-lg group-hover:text-primary transition-colors">{subject.name}</CardTitle>
                     </CardHeader>

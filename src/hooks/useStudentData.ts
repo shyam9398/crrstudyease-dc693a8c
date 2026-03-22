@@ -2,17 +2,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 // Fetch subjects for a branch+regulation (no auth required)
-export function useStudentSubjects(branchId: string | undefined, regulationId: string | undefined) {
+export function useStudentSubjects(branchId: string | undefined, regulationId: string | undefined, yearSem?: string | undefined) {
   return useQuery({
-    queryKey: ['student-subjects', branchId, regulationId],
+    queryKey: ['student-subjects', branchId, regulationId, yearSem],
     queryFn: async () => {
       if (!branchId || !regulationId) return [];
       let query = supabase
         .from('subjects')
         .select('*')
         .eq('branch_id', branchId)
-        .eq('regulation_id', regulationId)
-        .order('created_at', { ascending: false });
+        .eq('regulation_id', regulationId);
+      if (yearSem) {
+        query = query.eq('year_sem', yearSem);
+      }
+      query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) throw error;
       return data;

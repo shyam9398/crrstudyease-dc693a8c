@@ -123,6 +123,7 @@ const Dashboard = () => {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectCode, setNewSubjectCode] = useState('');
   const [newSubjectRegulation, setNewSubjectRegulation] = useState('');
+  const [newSubjectYearSem, setNewSubjectYearSem] = useState('');
   const [newRegulationName, setNewRegulationName] = useState('');
   const [editSubjectName, setEditSubjectName] = useState('');
   const [editSubjectCode, setEditSubjectCode] = useState('');
@@ -165,7 +166,7 @@ const Dashboard = () => {
   };
 
   const handleAddSubject = async () => {
-    if (newSubjectName.trim() && newSubjectCode.trim() && newSubjectRegulation) {
+    if (newSubjectName.trim() && newSubjectCode.trim() && newSubjectRegulation && newSubjectYearSem) {
       // Check for duplicate subject code
       const existingSubject = subjects.find(s => s.code.toLowerCase() === newSubjectCode.trim().toLowerCase());
       if (existingSubject) {
@@ -177,14 +178,18 @@ const Dashboard = () => {
           name: newSubjectName,
           code: newSubjectCode,
           regulationId: newSubjectRegulation,
+          yearSem: newSubjectYearSem,
         });
         setNewSubjectName('');
         setNewSubjectCode('');
         setNewSubjectRegulation('');
+        setNewSubjectYearSem('');
         setIsSubjectDialogOpen(false);
       } catch {
         // Error already shown by mutation
       }
+    } else {
+      toast.error('Please fill all fields including Year/Semester');
     }
   };
 
@@ -395,8 +400,20 @@ const Dashboard = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2">
+                    <Label>Year / Semester</Label>
+                    <Select value={newSubjectYearSem} onValueChange={setNewSubjectYearSem}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select year-semester" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['1-1', '1-2', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2'].map((ys) => (
+                          <SelectItem key={ys} value={ys}>{ys}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Button 
-                    onClick={handleAddSubject} 
                     className="w-full"
                     disabled={createSubject.isPending}
                   >
@@ -529,10 +546,13 @@ const Dashboard = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <Badge variant="secondary">{subject.code}</Badge>
                           {regulation && (
                             <Badge variant="outline" className="text-xs">{regulation.name}</Badge>
+                          )}
+                          {subject.year_sem && (
+                            <Badge variant="outline" className="text-xs">{subject.year_sem}</Badge>
                           )}
                         </div>
                         <CardTitle className="text-lg">{subject.name}</CardTitle>

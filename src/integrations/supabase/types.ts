@@ -361,6 +361,51 @@ export type Database = {
           },
         ]
       }
+      students: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          id: string
+          regulation_id: string | null
+          updated_at: string
+          user_id: string
+          year_sem: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          regulation_id?: string | null
+          updated_at?: string
+          user_id: string
+          year_sem?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          regulation_id?: string | null
+          updated_at?: string
+          user_id?: string
+          year_sem?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_regulation_id_fkey"
+            columns: ["regulation_id"]
+            isOneToOne: false
+            referencedRelation: "regulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           branch_id: string
@@ -371,6 +416,7 @@ export type Database = {
           name: string
           regulation_id: string
           updated_at: string
+          year_sem: string | null
         }
         Insert: {
           branch_id: string
@@ -381,6 +427,7 @@ export type Database = {
           name: string
           regulation_id: string
           updated_at?: string
+          year_sem?: string | null
         }
         Update: {
           branch_id?: string
@@ -391,6 +438,7 @@ export type Database = {
           name?: string
           regulation_id?: string
           updated_at?: string
+          year_sem?: string | null
         }
         Relationships: [
           {
