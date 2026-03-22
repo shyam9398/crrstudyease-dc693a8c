@@ -9,6 +9,7 @@ export interface Subject {
   code: string;
   branch_id: string;
   regulation_id: string;
+  year_sem: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
