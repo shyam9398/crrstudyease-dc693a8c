@@ -413,7 +413,7 @@ const Dashboard = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                    onClick={handleAddSubject} 
+                  <Button 
                     className="w-full"
                     disabled={createSubject.isPending}
                   >
