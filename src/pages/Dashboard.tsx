@@ -166,7 +166,7 @@ const Dashboard = () => {
   };
 
   const handleAddSubject = async () => {
-    if (newSubjectName.trim() && newSubjectCode.trim() && newSubjectRegulation) {
+    if (newSubjectName.trim() && newSubjectCode.trim() && newSubjectRegulation && newSubjectYearSem) {
       // Check for duplicate subject code
       const existingSubject = subjects.find(s => s.code.toLowerCase() === newSubjectCode.trim().toLowerCase());
       if (existingSubject) {
@@ -178,14 +178,18 @@ const Dashboard = () => {
           name: newSubjectName,
           code: newSubjectCode,
           regulationId: newSubjectRegulation,
+          yearSem: newSubjectYearSem,
         });
         setNewSubjectName('');
         setNewSubjectCode('');
         setNewSubjectRegulation('');
+        setNewSubjectYearSem('');
         setIsSubjectDialogOpen(false);
       } catch {
         // Error already shown by mutation
       }
+    } else {
+      toast.error('Please fill all fields including Year/Semester');
     }
   };
 
