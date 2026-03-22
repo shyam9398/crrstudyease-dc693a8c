@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranches, useRegulations } from '@/hooks/useBranchesAndRegulations';
@@ -20,6 +20,8 @@ import collegeLogo from '@/assets/college-logo.png';
 
 type RoleSelection = 'admin' | 'faculty' | 'student' | null;
 
+const YEAR_SEM_OPTIONS = ['1-1', '1-2', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2'];
+
 const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
@@ -38,9 +40,24 @@ const Login = () => {
   const [adminStep, setAdminStep] = useState<1 | 2>(1);
 
   // Student flow state
-  const [studentStep, setStudentStep] = useState<1 | 2>(1);
+  const [studentStep, setStudentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [studentUserId, setStudentUserId] = useState('');
   const [studentBranch, setStudentBranch] = useState('');
   const [studentRegulation, setStudentRegulation] = useState('');
+  const [studentYearSem, setStudentYearSem] = useState('');
+
+  // Check for saved student session
+  useEffect(() => {
+    const savedStudent = localStorage.getItem('student_session');
+    if (savedStudent) {
+      try {
+        const data = JSON.parse(savedStudent);
+        if (data.user_id && data.branch_id && data.regulation_id && data.year_sem) {
+          navigate(`/student/dashboard?branch=${data.branch_id}&regulation=${data.regulation_id}&year_sem=${data.year_sem}`);
+        }
+      } catch {}
+    }
+  }, [navigate]);
 
   const handleFacultyLogin = async () => {
     if (!facultyCode || !password) {
@@ -48,7 +65,6 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    // Convert faculty code to synthetic email for auth - trim whitespace
     const trimmedCode = facultyCode.trim();
     const syntheticEmail = `${trimmedCode.toLowerCase()}@faculty.studyease.local`;
     const { error } = await signIn(syntheticEmail, password);
@@ -94,20 +110,93 @@ const Login = () => {
     setLoading(false);
   };
 
-  const handleStudentBrowse = () => {
-    if (studentStep === 1) {
-      if (!studentBranch) {
-        toast.error('Please select a branch');
-        return;
-      }
-      setStudentStep(2);
-    } else {
-      if (!studentRegulation) {
-        toast.error('Please select a regulation');
-        return;
-      }
-      navigate(`/student/dashboard?branch=${studentBranch}&regulation=${studentRegulation}`);
+  const handleStudentLogin = async () => {
+    const trimmedId = studentUserId.trim();
+    if (!trimmedId) {
+      toast.error('Please enter your User ID');
+      return;
     }
+
+    setLoading(true);
+    try {
+      // Check if student exists
+      const { data: existing } = await supabase
+        .from('students')
+        .select('*')
+        .eq('user_id', trimmedId)
+        .maybeSingle();
+
+      if (existing) {
+        // Returning student — load saved preferences
+        if (existing.branch_id && existing.regulation_id && existing.year_sem) {
+          localStorage.setItem('student_session', JSON.stringify(existing));
+          toast.success('Welcome back!');
+          navigate(`/student/dashboard?branch=${existing.branch_id}&regulation=${existing.regulation_id}&year_sem=${existing.year_sem}`);
+          setLoading(false);
+          return;
+        }
+        // Has account but incomplete preferences, go to selection
+        setStudentStep(2);
+      } else {
+        // New student, go to selection flow
+        setStudentStep(2);
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  const handleStudentComplete = async () => {
+    if (!studentBranch || !studentRegulation || !studentYearSem) {
+      toast.error('Please complete all selections');
+      return;
+    }
+
+    setLoading(true);
+    const trimmedId = studentUserId.trim();
+    try {
+      // Upsert student record
+      const { data: existing } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', trimmedId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('students')
+          .update({
+            branch_id: studentBranch,
+            regulation_id: studentRegulation,
+            year_sem: studentYearSem,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', trimmedId);
+      } else {
+        await supabase
+          .from('students')
+          .insert({
+            user_id: trimmedId,
+            branch_id: studentBranch,
+            regulation_id: studentRegulation,
+            year_sem: studentYearSem,
+          });
+      }
+
+      const sessionData = {
+        user_id: trimmedId,
+        branch_id: studentBranch,
+        regulation_id: studentRegulation,
+        year_sem: studentYearSem,
+      };
+      localStorage.setItem('student_session', JSON.stringify(sessionData));
+      toast.success('Welcome!');
+      navigate(`/student/dashboard?branch=${studentBranch}&regulation=${studentRegulation}&year_sem=${studentYearSem}`);
+    } catch {
+      toast.error('Failed to save. Please try again.');
+    }
+    setLoading(false);
   };
 
   const handleBack = () => {
@@ -119,8 +208,17 @@ const Login = () => {
     setAdminBranch('');
     setAdminStep(1);
     setStudentStep(1);
+    setStudentUserId('');
     setStudentBranch('');
     setStudentRegulation('');
+    setStudentYearSem('');
+  };
+
+  const handleStudentBack = () => {
+    if (studentStep === 4) setStudentStep(3);
+    else if (studentStep === 3) setStudentStep(2);
+    else if (studentStep === 2) setStudentStep(1);
+    else handleBack();
   };
 
   return (
@@ -300,62 +398,124 @@ const Login = () => {
             {/* Student Flow */}
             {selectedRole === 'student' && (
               <div className="space-y-4">
-                <Button variant="ghost" size="sm" onClick={studentStep === 2 ? () => setStudentStep(1) : handleBack} className="mb-2">
+                <Button variant="ghost" size="sm" onClick={handleStudentBack} className="mb-2">
                   <ArrowLeft className="w-4 h-4 mr-1" /> Back
                 </Button>
                 <div className="text-center mb-4">
                   <GraduationCap className="w-10 h-10 text-primary mx-auto mb-2" />
                   <h3 className="font-semibold text-lg">
-                    {studentStep === 1 ? 'Select Your Branch' : 'Select Your Regulation'}
+                    {studentStep === 1 && 'Student Login'}
+                    {studentStep === 2 && 'Select Your Branch'}
+                    {studentStep === 3 && 'Select Your Regulation'}
+                    {studentStep === 4 && 'Select Year / Semester'}
                   </h3>
                 </div>
+
+                {/* Step 1: User ID */}
                 {studentStep === 1 && (
-                  <div className="space-y-2">
-                    <Label>Branch</Label>
-                    <Select value={studentBranch} onValueChange={setStudentBranch}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {branchesLoading ? (
-                          <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : (
-                          branches.map((branch) => (
-                            <SelectItem key={branch.id} value={branch.id}>
-                              {branch.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label>User ID</Label>
+                      <Input
+                        placeholder="Enter your unique User ID"
+                        value={studentUserId}
+                        onChange={(e) => setStudentUserId(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleStudentLogin()}
+                      />
+                    </div>
+                    <Button className="w-full" onClick={handleStudentLogin} disabled={loading}>
+                      {loading ? 'Checking...' : 'Continue'}
+                    </Button>
+                  </>
                 )}
+
+                {/* Step 2: Branch */}
                 {studentStep === 2 && (
-                  <div className="space-y-2">
-                    <Label>Regulation</Label>
-                    <Select value={studentRegulation} onValueChange={setStudentRegulation}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your regulation" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {regulationsLoading ? (
-                          <SelectItem value="loading" disabled>Loading...</SelectItem>
-                        ) : regulations.length === 0 ? (
-                          <SelectItem value="none" disabled>No regulations available</SelectItem>
-                        ) : (
-                          regulations.map((reg) => (
-                            <SelectItem key={reg.id} value={reg.id}>
-                              {reg.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label>Branch</Label>
+                      <Select value={studentBranch} onValueChange={setStudentBranch}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {branchesLoading ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : (
+                            branches.map((branch) => (
+                              <SelectItem key={branch.id} value={branch.id}>
+                                {branch.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full" onClick={() => {
+                      if (!studentBranch) { toast.error('Please select a branch'); return; }
+                      setStudentStep(3);
+                    }}>
+                      Next
+                    </Button>
+                  </>
                 )}
-                <Button className="w-full" onClick={handleStudentBrowse}>
-                  {studentStep === 1 ? 'Next' : 'Browse Syllabus'}
-                </Button>
+
+                {/* Step 3: Regulation */}
+                {studentStep === 3 && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Regulation</Label>
+                      <Select value={studentRegulation} onValueChange={setStudentRegulation}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your regulation" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {regulationsLoading ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : regulations.length === 0 ? (
+                            <SelectItem value="none" disabled>No regulations available</SelectItem>
+                          ) : (
+                            regulations.map((reg) => (
+                              <SelectItem key={reg.id} value={reg.id}>
+                                {reg.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full" onClick={() => {
+                      if (!studentRegulation) { toast.error('Please select a regulation'); return; }
+                      setStudentStep(4);
+                    }}>
+                      Next
+                    </Button>
+                  </>
+                )}
+
+                {/* Step 4: Year/Sem */}
+                {studentStep === 4 && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Year / Semester</Label>
+                      <Select value={studentYearSem} onValueChange={setStudentYearSem}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select year-semester" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {YEAR_SEM_OPTIONS.map((ys) => (
+                            <SelectItem key={ys} value={ys}>
+                              {ys}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full" onClick={handleStudentComplete} disabled={loading}>
+                      {loading ? 'Saving...' : 'Browse Syllabus'}
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </CardContent>
