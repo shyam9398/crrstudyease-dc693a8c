@@ -110,10 +110,22 @@ const Login = () => {
     setLoading(false);
   };
 
+  const validateStudentUserId = (id: string): string | null => {
+    if (id.length !== 10) return 'User ID must be 10 characters';
+    if (!/^[A-Za-z0-9]+$/.test(id)) return 'Only letters and numbers allowed';
+    return null;
+  };
+
   const handleStudentLogin = async () => {
     const trimmedId = studentUserId.trim();
     if (!trimmedId) {
       toast.error('Please enter your User ID');
+      return;
+    }
+
+    const validationError = validateStudentUserId(trimmedId);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
