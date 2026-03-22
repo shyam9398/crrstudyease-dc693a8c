@@ -546,10 +546,13 @@ const Dashboard = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <Badge variant="secondary">{subject.code}</Badge>
                           {regulation && (
                             <Badge variant="outline" className="text-xs">{regulation.name}</Badge>
+                          )}
+                          {subject.year_sem && (
+                            <Badge variant="outline" className="text-xs">{subject.year_sem}</Badge>
                           )}
                         </div>
                         <CardTitle className="text-lg">{subject.name}</CardTitle>
