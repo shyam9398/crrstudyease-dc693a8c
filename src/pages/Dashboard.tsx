@@ -123,6 +123,7 @@ const Dashboard = () => {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectCode, setNewSubjectCode] = useState('');
   const [newSubjectRegulation, setNewSubjectRegulation] = useState('');
+  const [newSubjectYearSem, setNewSubjectYearSem] = useState('');
   const [newRegulationName, setNewRegulationName] = useState('');
   const [editSubjectName, setEditSubjectName] = useState('');
   const [editSubjectCode, setEditSubjectCode] = useState('');
