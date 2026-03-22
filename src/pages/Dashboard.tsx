@@ -400,7 +400,19 @@ const Dashboard = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button 
+                  <div className="space-y-2">
+                    <Label>Year / Semester</Label>
+                    <Select value={newSubjectYearSem} onValueChange={setNewSubjectYearSem}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select year-semester" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['1-1', '1-2', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2'].map((ys) => (
+                          <SelectItem key={ys} value={ys}>{ys}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                     onClick={handleAddSubject} 
                     className="w-full"
                     disabled={createSubject.isPending}
