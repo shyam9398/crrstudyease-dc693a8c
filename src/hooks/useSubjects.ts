@@ -172,7 +172,7 @@ export function useCreateSubject() {
   const { user, profile } = useAuth();
   
   return useMutation({
-    mutationFn: async ({ name, code, regulationId }: { name: string; code: string; regulationId: string }) => {
+    mutationFn: async ({ name, code, regulationId, yearSem }: { name: string; code: string; regulationId: string; yearSem: string }) => {
       if (!user || !profile?.branch_id) throw new Error('Not authenticated');
       
       const { data, error } = await supabase
@@ -182,6 +182,7 @@ export function useCreateSubject() {
           code,
           branch_id: profile.branch_id,
           regulation_id: regulationId,
+          year_sem: yearSem,
           created_by: user.id,
         })
         .select()
