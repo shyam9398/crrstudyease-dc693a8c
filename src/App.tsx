@@ -6,6 +6,12 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Login from "./pages/Login";
+import Landing from "./pages/Landing";
+import CollegesHub from "./pages/CollegesHub";
+import CollegeLogin from "./pages/CollegeLogin";
+import StudentLogin from "./pages/StudentLogin";
+import CreateCollege from "./pages/CreateCollege";
+import Explore from "./pages/Explore";
 import Dashboard from "./pages/Dashboard";
 import SubjectPage from "./pages/SubjectPage";
 import ModulePage from "./pages/ModulePage";
@@ -44,7 +50,13 @@ const AppRoutes = () => {
   
   return (
     <Routes>
-      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
+      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />} />
+      <Route path="/colleges" element={<CollegesHub />} />
+      <Route path="/explore" element={<Explore />} />
+      <Route path="/create-college" element={<CreateCollege />} />
+      <Route path="/college-login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <CollegeLogin />} />
+      <Route path="/student-login" element={<StudentLogin />} />
+      <Route path="/legacy-login" element={<Login />} />
       <Route
         path="/dashboard"
         element={

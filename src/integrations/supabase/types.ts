@@ -59,6 +59,7 @@ export type Database = {
       branch_admins: {
         Row: {
           branch_id: string
+          college_id: string | null
           created_at: string
           id: string
           is_super_admin: boolean
@@ -67,6 +68,7 @@ export type Database = {
         }
         Insert: {
           branch_id: string
+          college_id?: string | null
           created_at?: string
           id?: string
           is_super_admin?: boolean
@@ -75,6 +77,7 @@ export type Database = {
         }
         Update: {
           branch_id?: string
+          college_id?: string | null
           created_at?: string
           id?: string
           is_super_admin?: boolean
@@ -93,18 +96,42 @@ export type Database = {
       }
       branches: {
         Row: {
+          college_id: string | null
           created_at: string
           id: string
           name: string
         }
         Insert: {
+          college_id?: string | null
           created_at?: string
           id?: string
           name: string
         }
         Update: {
+          college_id?: string | null
           created_at?: string
           id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      colleges: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
           name?: string
         }
         Relationships: []
@@ -207,6 +234,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           branch_id: string | null
+          college_id: string | null
           created_at: string
           email: string
           faculty_code: string | null
@@ -218,6 +246,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           branch_id?: string | null
+          college_id?: string | null
           created_at?: string
           email: string
           faculty_code?: string | null
@@ -229,6 +258,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           branch_id?: string | null
+          college_id?: string | null
           created_at?: string
           email?: string
           faculty_code?: string | null
@@ -256,18 +286,21 @@ export type Database = {
       }
       regulations: {
         Row: {
+          college_id: string | null
           created_at: string
           created_by: string | null
           id: string
           name: string
         }
         Insert: {
+          college_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name: string
         }
         Update: {
+          college_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -364,6 +397,7 @@ export type Database = {
       students: {
         Row: {
           branch_id: string | null
+          college_id: string | null
           created_at: string
           id: string
           regulation_id: string | null
@@ -373,6 +407,7 @@ export type Database = {
         }
         Insert: {
           branch_id?: string | null
+          college_id?: string | null
           created_at?: string
           id?: string
           regulation_id?: string | null
@@ -382,6 +417,7 @@ export type Database = {
         }
         Update: {
           branch_id?: string | null
+          college_id?: string | null
           created_at?: string
           id?: string
           regulation_id?: string | null
@@ -410,6 +446,7 @@ export type Database = {
         Row: {
           branch_id: string
           code: string
+          college_id: string | null
           created_at: string
           created_by: string
           id: string
@@ -421,6 +458,7 @@ export type Database = {
         Insert: {
           branch_id: string
           code: string
+          college_id?: string | null
           created_at?: string
           created_by: string
           id?: string
@@ -432,6 +470,7 @@ export type Database = {
         Update: {
           branch_id?: string
           code?: string
+          college_id?: string | null
           created_at?: string
           created_by?: string
           id?: string

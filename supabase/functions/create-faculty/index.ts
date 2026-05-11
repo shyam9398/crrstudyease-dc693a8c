@@ -95,12 +95,20 @@ serve(async (req) => {
       console.error("Role insert error:", roleError);
     }
 
-    // Update profile with branch and faculty code
+    // Look up the branch's college so the faculty profile is properly scoped
+    const { data: branchRow } = await supabase
+      .from("branches")
+      .select("college_id")
+      .eq("id", branchId)
+      .maybeSingle();
+
+    // Update profile with branch, college, and faculty code
     const { error: profileError } = await supabase
       .from("profiles")
       .update({
         faculty_code: facultyCode.toUpperCase(),
         branch_id: branchId,
+        college_id: branchRow?.college_id ?? null,
         name: facultyCode.toUpperCase(),
       })
       .eq("id", userId);
