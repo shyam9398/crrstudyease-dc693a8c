@@ -51,24 +51,15 @@ const AdminDashboard = () => {
 
   const loadAll = useCallback(async () => {
     const token = adminToken();
-    const [br, st] = await Promise.all([
+    const cid = sessionStorage.getItem('admin_college') || '';
+    const [br, st, fc] = await Promise.all([
       supabase.functions.invoke('manage-branches', { body: { adminToken: token, action: 'list' } }),
       supabase.functions.invoke('manage-students', { body: { adminToken: token, action: 'list' } }),
+      supabase.functions.invoke('list-faculty', { body: { adminToken: token, collegeId: cid } }),
     ]);
     if (br.data?.success) setBranches(br.data.branches);
     if (st.data?.success) setStudents(st.data.students);
-
-    // Faculty: list profiles with faculty_code in this college
-    const { data: facData } = await supabase
-      .from('profiles')
-      .select('id, faculty_code, name, branch_id, created_at, college_id')
-      .eq('college_id', sessionStorage.getItem('admin_college'))
-      .not('faculty_code', 'is', null)
-      .order('created_at', { ascending: false });
-    setFaculty(((facData as any[]) || []).map((p) => ({
-      id: p.id, faculty_code: p.faculty_code, name: p.name,
-      branch_id: p.branch_id, created_at: p.created_at,
-    })));
+    if (fc.data?.success) setFaculty(fc.data.faculty);
   }, []);
 
   useEffect(() => {
