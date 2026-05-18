@@ -46,42 +46,19 @@ const CreateCollege = () => {
         logo_url = pub.publicUrl;
       }
 
-      // 2. Create college
-      const { data: college, error: cErr } = await supabase
-        .from('colleges')
-        .insert({ name: name.trim(), logo_url })
-        .select()
-        .single();
-      if (cErr) {
-        toast.error(cErr.message.includes('duplicate') ? 'A college with this name already exists' : cErr.message);
-        setLoading(false);
-        return;
-      }
+      // 2. Create college + branch + admin via secure edge function
+      const { data, error } = await supabase.functions.invoke('create-college', {
+        body: {
+          name: name.trim(),
+          logo_url,
+          branchName: branchName.trim(),
+          adminUserId: adminUserId.trim(),
+          adminPassword,
+        },
+      });
 
-      // 3. Create first branch for this college
-      const { data: branch, error: bErr } = await supabase
-        .from('branches')
-        .insert({ name: branchName.trim(), college_id: college.id })
-        .select()
-        .single();
-      if (bErr) {
-        toast.error('Failed to create branch: ' + bErr.message);
-        setLoading(false);
-        return;
-      }
-
-      // 4. Create the first admin (super admin of this college)
-      const { error: aErr } = await supabase
-        .from('branch_admins')
-        .insert({
-          user_id_credential: adminUserId.trim(),
-          password_credential: adminPassword,
-          branch_id: branch.id,
-          college_id: college.id,
-          is_super_admin: true,
-        });
-      if (aErr) {
-        toast.error('Failed to create admin: ' + aErr.message);
+      if (error || !data?.success) {
+        toast.error(data?.error || error?.message || 'Failed to create college');
         setLoading(false);
         return;
       }
