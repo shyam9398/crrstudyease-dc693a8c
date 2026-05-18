@@ -56,16 +56,33 @@ const CreateCollege = () => {
         },
       });
 
-      if (error || !data?.success) {
-        toast.error(data?.error || error?.message || 'Failed to create college');
+      // When the edge function returns a non-2xx status, supabase-js puts
+      // the parsed body on error.context (a Response). Read it to surface
+      // the real error message (e.g. "A college with this name already exists").
+      if (error) {
+        let serverMsg: string | undefined;
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            serverMsg = body?.error;
+          }
+        } catch { /* ignore */ }
+        toast.error(serverMsg || error.message || 'Failed to create college');
+        setLoading(false);
+        return;
+      }
+
+      if (!data?.success) {
+        toast.error(data?.error || 'Failed to create college');
         setLoading(false);
         return;
       }
 
       toast.success('College created! You can now log in.');
       navigate('/college-login', { replace: true });
-    } catch {
-      toast.error('Something went wrong. Please try again.');
+    } catch (e: any) {
+      toast.error(e?.message || 'Something went wrong. Please try again.');
     }
     setLoading(false);
   };
