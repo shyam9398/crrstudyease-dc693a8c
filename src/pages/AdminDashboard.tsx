@@ -109,7 +109,7 @@ const AdminDashboard = () => {
       body: { adminToken: adminToken(), action, branchId: branchForm.id || undefined, name: branchForm.name.trim() },
     });
     setBranchBusy(false);
-    if (error || !data?.success) { toast.error(data?.error || 'Failed'); return; }
+    if (error || !data?.success) { toast.error(await extractError(error, data)); return; }
     toast.success(branchForm.id ? 'Branch updated' : 'Branch created');
     setBranchForm({ id: '', name: '' });
     loadAll();
@@ -120,7 +120,7 @@ const AdminDashboard = () => {
     const { data, error } = await supabase.functions.invoke('manage-branches', {
       body: { adminToken: adminToken(), action: 'delete', branchId: deleteBranch.id },
     });
-    if (error || !data?.success) { toast.error(data?.error || 'Failed'); return; }
+    if (error || !data?.success) { toast.error(await extractError(error, data)); return; }
     toast.success('Branch deleted');
     setDeleteBranch(null);
     loadAll();
@@ -141,7 +141,7 @@ const AdminDashboard = () => {
         branchId: facultyForm.branchId,
       },
     });
-    if (error || !data?.success) { toast.error(data?.error || 'Failed'); setFacultyBusy(false); return; }
+    if (error || !data?.success) { toast.error(await extractError(error, data)); setFacultyBusy(false); return; }
     // Set name separately via edit-faculty if provided
     if (facultyForm.name.trim()) {
       await supabase.functions.invoke('edit-faculty', {
@@ -159,7 +159,7 @@ const AdminDashboard = () => {
     const { data, error } = await supabase.functions.invoke('delete-faculty', {
       body: { adminToken: adminToken(), facultyUserId: deleteFaculty.id },
     });
-    if (error || !data?.success) { toast.error(data?.error || 'Failed'); return; }
+    if (error || !data?.success) { toast.error(await extractError(error, data)); return; }
     toast.success('Faculty deleted');
     setDeleteFaculty(null);
     loadAll();
@@ -185,7 +185,7 @@ const AdminDashboard = () => {
     }
     const { data, error } = await supabase.functions.invoke('manage-students', { body });
     setStudentBusy(false);
-    if (error || !data?.success) { toast.error(data?.error || 'Failed'); return; }
+    if (error || !data?.success) { toast.error(await extractError(error, data)); return; }
     toast.success(studentForm.id ? 'Student updated' : 'Student created');
     setStudentForm({ id: '', userId: '', name: '', password: '', branchId: '' });
     loadAll();
@@ -196,7 +196,7 @@ const AdminDashboard = () => {
     const { data, error } = await supabase.functions.invoke('manage-students', {
       body: { adminToken: adminToken(), action: 'delete', studentId: deleteStudent.id },
     });
-    if (error || !data?.success) { toast.error(data?.error || 'Failed'); return; }
+    if (error || !data?.success) { toast.error(await extractError(error, data)); return; }
     toast.success('Student deleted');
     setDeleteStudent(null);
     loadAll();
