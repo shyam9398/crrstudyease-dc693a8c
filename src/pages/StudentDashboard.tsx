@@ -16,9 +16,9 @@ const StudentDashboard = () => {
   const regulationId = searchParams.get('regulation');
   const yearSem = searchParams.get('year_sem');
 
-  if (!branchId || !regulationId) return <Navigate to="/" replace />;
+  if (!branchId) return <Navigate to="/student/login" replace />;
 
-  const { data: subjects = [], isLoading } = useStudentSubjects(branchId, regulationId, yearSem || undefined);
+  const { data: subjects = [], isLoading } = useStudentSubjects(branchId, regulationId || '', yearSem || undefined);
   const { data: branches = [] } = useBranches();
   const { data: regulations = [] } = useRegulations();
 
