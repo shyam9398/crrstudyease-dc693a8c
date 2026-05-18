@@ -73,8 +73,8 @@ export function useRegulations() {
 
 export function useCreateRegulation() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  
+  const { user, profile } = useAuth();
+
   return useMutation({
     mutationFn: async (name: string) => {
       if (!user) throw new Error('Not authenticated');
@@ -85,7 +85,7 @@ export function useCreateRegulation() {
         .insert({
           name: name.trim(),
           created_by: user.id,
-          college_id: user.profile?.college_id ?? null,
+          college_id: profile?.college_id ?? null,
         } as any)
         .select()
         .single();
