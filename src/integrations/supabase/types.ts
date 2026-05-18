@@ -58,7 +58,7 @@ export type Database = {
       }
       branch_admins: {
         Row: {
-          branch_id: string
+          branch_id: string | null
           college_id: string | null
           created_at: string
           id: string
@@ -67,7 +67,7 @@ export type Database = {
           user_id_credential: string
         }
         Insert: {
-          branch_id: string
+          branch_id?: string | null
           college_id?: string | null
           created_at?: string
           id?: string
@@ -76,7 +76,7 @@ export type Database = {
           user_id_credential: string
         }
         Update: {
-          branch_id?: string
+          branch_id?: string | null
           college_id?: string | null
           created_at?: string
           id?: string
@@ -117,20 +117,26 @@ export type Database = {
       }
       colleges: {
         Row: {
+          affiliation: string | null
           created_at: string
           id: string
+          location: string | null
           logo_url: string | null
           name: string
         }
         Insert: {
+          affiliation?: string | null
           created_at?: string
           id?: string
+          location?: string | null
           logo_url?: string | null
           name: string
         }
         Update: {
+          affiliation?: string | null
           created_at?: string
           id?: string
+          location?: string | null
           logo_url?: string | null
           name?: string
         }
@@ -400,6 +406,8 @@ export type Database = {
           college_id: string | null
           created_at: string
           id: string
+          name: string | null
+          password_hash: string | null
           regulation_id: string | null
           updated_at: string
           user_id: string
@@ -410,6 +418,8 @@ export type Database = {
           college_id?: string | null
           created_at?: string
           id?: string
+          name?: string | null
+          password_hash?: string | null
           regulation_id?: string | null
           updated_at?: string
           user_id: string
@@ -420,6 +430,8 @@ export type Database = {
           college_id?: string | null
           created_at?: string
           id?: string
+          name?: string | null
+          password_hash?: string | null
           regulation_id?: string | null
           updated_at?: string
           user_id?: string
