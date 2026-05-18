@@ -198,6 +198,7 @@ export function useCreateSubject() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      queryClient.invalidateQueries({ queryKey: ['all-subjects'] });
       toast.success('Subject created successfully');
     },
     onError: (error) => {
