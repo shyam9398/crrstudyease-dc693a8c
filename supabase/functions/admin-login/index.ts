@@ -7,38 +7,36 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { userId: rawUserId, password: rawPassword, branchId } = await req.json();
+    const { userId: rawUserId, password: rawPassword, collegeId } = await req.json();
     const userId = (rawUserId || "").trim();
     const password = (rawPassword || "").trim();
 
-    if (!branchId || !userId || !password) {
+    if (!collegeId || !userId || !password) {
       return new Response(
-        JSON.stringify({ success: false, error: "Branch selection and credentials required" }),
+        JSON.stringify({ success: false, error: "College and credentials required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    // Check credentials against branch_admins table
-    const { data: adminRecord, error: queryError } = await supabase
+    const { data: adminRecord } = await supabase
       .from("branch_admins")
-      .select("branch_id, is_super_admin")
+      .select("id, branch_id, is_super_admin, college_id")
       .eq("user_id_credential", userId)
       .eq("password_credential", password)
-      .eq("branch_id", branchId)
+      .eq("college_id", collegeId)
       .maybeSingle();
 
-    if (queryError || !adminRecord) {
+    if (!adminRecord) {
       return new Response(
-        JSON.stringify({ success: false, error: "Invalid admin credentials for this branch" }),
+        JSON.stringify({ success: false, error: "Invalid admin credentials" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -48,7 +46,13 @@ serve(async (req) => {
 
     const { error: insertError } = await supabase
       .from("admin_tokens")
-      .insert({ token, branch_id: branchId, expires_at: expiresAt });
+      .insert({
+        token,
+        branch_id: adminRecord.branch_id ?? null,
+        college_id: collegeId,
+        is_super_admin: !!adminRecord.is_super_admin,
+        expires_at: expiresAt,
+      });
 
     if (insertError) {
       console.error("Token insert error:", insertError);
@@ -59,11 +63,12 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        token, 
-        branchId,
-        isSuperAdmin: adminRecord.is_super_admin 
+      JSON.stringify({
+        success: true,
+        token,
+        collegeId,
+        branchId: adminRecord.branch_id,
+        isSuperAdmin: !!adminRecord.is_super_admin,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
