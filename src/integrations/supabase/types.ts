@@ -34,24 +34,30 @@ export type Database = {
       }
       admin_tokens: {
         Row: {
-          branch_id: string
+          branch_id: string | null
+          college_id: string | null
           created_at: string
           expires_at: string
           id: string
+          is_super_admin: boolean
           token: string
         }
         Insert: {
-          branch_id: string
+          branch_id?: string | null
+          college_id?: string | null
           created_at?: string
           expires_at?: string
           id?: string
+          is_super_admin?: boolean
           token: string
         }
         Update: {
-          branch_id?: string
+          branch_id?: string | null
+          college_id?: string | null
           created_at?: string
           expires_at?: string
           id?: string
+          is_super_admin?: boolean
           token?: string
         }
         Relationships: []
