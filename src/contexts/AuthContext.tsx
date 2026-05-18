@@ -10,6 +10,7 @@ export interface UserProfile {
   email: string;
   branch_id: string | null;
   regulation_id: string | null;
+  college_id: string | null;
 }
 
 interface AuthContextType {

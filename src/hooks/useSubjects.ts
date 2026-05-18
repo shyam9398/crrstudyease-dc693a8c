@@ -174,25 +174,31 @@ export function useCreateSubject() {
   return useMutation({
     mutationFn: async ({ name, code, regulationId, yearSem }: { name: string; code: string; regulationId: string; yearSem: string }) => {
       if (!user || !profile?.branch_id) throw new Error('Not authenticated');
-      
+      if (!name?.trim()) throw new Error('Subject name is required');
+      if (!code?.trim()) throw new Error('Subject code is required');
+      if (!regulationId) throw new Error('Regulation is required');
+      if (!yearSem) throw new Error('Year/Semester is required');
+
       const { data, error } = await supabase
         .from('subjects')
         .insert({
-          name,
-          code,
+          name: name.trim(),
+          code: code.trim(),
           branch_id: profile.branch_id,
           regulation_id: regulationId,
           year_sem: yearSem,
           created_by: user.id,
-        })
+          college_id: profile.college_id ?? null,
+        } as any)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      queryClient.invalidateQueries({ queryKey: ['all-subjects'] });
       toast.success('Subject created successfully');
     },
     onError: (error) => {
