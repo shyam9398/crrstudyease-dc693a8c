@@ -22,7 +22,7 @@ serve(async (req) => {
   }
 
   try {
-    const { adminToken, branchId } = await req.json();
+    const { adminToken, branchId, collegeId } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -35,19 +35,19 @@ serve(async (req) => {
       );
     }
 
-    if (!branchId) {
+    if (!branchId && !collegeId) {
       return new Response(
-        JSON.stringify({ success: false, error: "Branch ID required" }),
+        JSON.stringify({ success: false, error: "Branch or college ID required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get faculty profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("id, faculty_code, branch_id, name, created_at")
-      .eq("branch_id", branchId)
+    let pq = supabase.from("profiles")
+      .select("id, faculty_code, branch_id, college_id, name, created_at")
       .not("faculty_code", "is", null);
+    if (branchId) pq = pq.eq("branch_id", branchId);
+    if (collegeId) pq = pq.eq("college_id", collegeId);
+    const { data: profiles, error: profilesError } = await pq;
 
     if (profilesError) {
       return new Response(
@@ -56,11 +56,10 @@ serve(async (req) => {
       );
     }
 
-    // Get subject count
-    const { count } = await supabase
-      .from("subjects")
-      .select("id", { count: "exact", head: true })
-      .eq("branch_id", branchId);
+    let sq = supabase.from("subjects").select("id", { count: "exact", head: true });
+    if (branchId) sq = sq.eq("branch_id", branchId);
+    if (collegeId) sq = sq.eq("college_id", collegeId);
+    const { count } = await sq;
 
     return new Response(
       JSON.stringify({ success: true, faculty: profiles || [], subjectCount: count || 0 }),
