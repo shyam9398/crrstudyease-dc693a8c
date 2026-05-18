@@ -78,13 +78,18 @@ export function useCreateRegulation() {
   return useMutation({
     mutationFn: async (name: string) => {
       if (!user) throw new Error('Not authenticated');
-      
+      if (!name?.trim()) throw new Error('Regulation name is required');
+
       const { data, error } = await supabase
         .from('regulations')
-        .insert({ name, created_by: user.id })
+        .insert({
+          name: name.trim(),
+          created_by: user.id,
+          college_id: user.profile?.college_id ?? null,
+        } as any)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
