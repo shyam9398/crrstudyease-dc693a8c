@@ -49,6 +49,20 @@ const AdminDashboard = () => {
 
   const adminToken = () => sessionStorage.getItem('admin_token') || '';
 
+  // Edge functions returning non-2xx leave the JSON body on error.context (a Response).
+  // Pull it out so users see the real message (e.g. "Student ID already exists").
+  const extractError = async (error: any, data: any, fallback = 'Failed'): Promise<string> => {
+    if (data?.error) return data.error;
+    try {
+      const ctx = error?.context;
+      if (ctx && typeof ctx.json === 'function') {
+        const body = await ctx.clone().json();
+        if (body?.error) return body.error;
+      }
+    } catch { /* ignore */ }
+    return error?.message || fallback;
+  };
+
   const loadAll = useCallback(async () => {
     const token = adminToken();
     const cid = sessionStorage.getItem('admin_college') || '';
