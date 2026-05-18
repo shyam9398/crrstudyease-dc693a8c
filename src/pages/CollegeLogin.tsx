@@ -9,11 +9,10 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Shield, Users, ArrowLeft } from 'lucide-react';
+import { Shield, Users, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface College { id: string; name: string; logo_url: string | null; }
-interface Branch { id: string; name: string; }
 
 type Role = 'admin' | 'faculty' | null;
 
@@ -26,14 +25,9 @@ const CollegeLogin = () => {
   const [collegeSelected, setCollegeSelected] = useState(false);
   const [role, setRole] = useState<Role>(null);
 
-  // Admin state
-  const [adminStep, setAdminStep] = useState<1 | 2>(1);
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [adminBranch, setAdminBranch] = useState('');
   const [adminUserId, setAdminUserId] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
-  // Faculty state
   const [facultyCode, setFacultyCode] = useState('');
   const [password, setPassword] = useState('');
 
@@ -46,18 +40,6 @@ const CollegeLogin = () => {
     })();
   }, []);
 
-  useEffect(() => {
-    if (!collegeId) { setBranches([]); return; }
-    (async () => {
-      const { data } = await supabase
-        .from('branches')
-        .select('id, name')
-        .eq('college_id', collegeId)
-        .order('name');
-      setBranches((data as Branch[]) || []);
-    })();
-  }, [collegeId]);
-
   const selectedCollege = colleges.find((c) => c.id === collegeId);
 
   const proceedFromCollege = () => {
@@ -68,21 +50,22 @@ const CollegeLogin = () => {
 
   const handleAdminLogin = async () => {
     if (!adminUserId || !adminPassword) { toast.error('Enter User ID and Password'); return; }
-    if (!adminBranch) { toast.error('Select a branch'); return; }
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-login', {
-        body: { userId: adminUserId, password: adminPassword, branchId: adminBranch },
+        body: { userId: adminUserId, password: adminPassword, collegeId },
       });
       if (error || !data?.success) {
         toast.error(data?.error || 'Invalid admin credentials');
       } else {
         sessionStorage.setItem('admin_token', data.token);
-        sessionStorage.setItem('admin_branch', adminBranch);
+        sessionStorage.setItem('admin_college', collegeId);
+        if (data.branchId) sessionStorage.setItem('admin_branch', data.branchId);
+        else sessionStorage.removeItem('admin_branch');
         if (data.isSuperAdmin) sessionStorage.setItem('is_super_admin', 'true');
         else sessionStorage.removeItem('is_super_admin');
         toast.success('Welcome, Admin!');
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard', { replace: true });
       }
     } catch {
       toast.error('Login failed.');
@@ -95,32 +78,50 @@ const CollegeLogin = () => {
     setLoading(true);
     const synthetic = `${facultyCode.trim().toLowerCase()}@faculty.studyease.local`;
     const { error } = await signIn(synthetic, password);
+    if (error) {
+      toast.error('Invalid Faculty ID or password');
+      setLoading(false);
+      return;
+    }
+    // verify faculty belongs to this college
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles').select('college_id').eq('id', user.id).maybeSingle();
+      if (profile && profile.college_id && profile.college_id !== collegeId) {
+        await supabase.auth.signOut();
+        toast.error('This faculty is not assigned to the selected college');
+        setLoading(false);
+        return;
+      }
+    }
+    toast.success('Welcome back!');
+    navigate('/dashboard', { replace: true });
     setLoading(false);
-    if (error) toast.error('Invalid Faculty ID or password');
-    else { toast.success('Welcome back!'); navigate('/dashboard'); }
   };
 
   const handleBack = () => {
-    if (role) { setRole(null); setAdminStep(1); return; }
+    if (role) { setRole(null); return; }
     if (collegeSelected) { setCollegeSelected(false); return; }
-    navigate('/colleges');
+    navigate(-1);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {selectedCollege && collegeSelected && (
-        <header className="w-full bg-card/80 backdrop-blur-sm border-b border-border/50 py-3 px-4">
+        <header className="w-full bg-card/70 backdrop-blur-xl border-b border-border/60 py-3 px-4">
           <div className="flex items-center justify-center gap-3 text-center">
-            {selectedCollege.logo_url ? (
-              <img src={selectedCollege.logo_url} alt={selectedCollege.name} className="w-12 h-12 object-contain rounded-full bg-white p-1 shadow-sm" />
-            ) : null}
+            {selectedCollege.logo_url && (
+              <img src={selectedCollege.logo_url} alt={selectedCollege.name}
+                className="w-12 h-12 object-contain rounded-full bg-white p-1 shadow-sm" />
+            )}
             <h1 className="text-base md:text-lg font-bold leading-tight">{selectedCollege.name}</h1>
           </div>
         </header>
       )}
 
       <div className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md glass-card rounded-2xl">
           <CardHeader className="text-center">
             <CardTitle>College Login</CardTitle>
             <CardDescription>
@@ -134,7 +135,6 @@ const CollegeLogin = () => {
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
 
-            {/* Step 1: Pick college */}
             {!collegeSelected && (
               <>
                 <div className="space-y-2">
@@ -148,83 +148,58 @@ const CollegeLogin = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button className="w-full" onClick={proceedFromCollege}>Next</Button>
+                <Button className="w-full rounded-xl" onClick={proceedFromCollege}>Next</Button>
               </>
             )}
 
-            {/* Step 2: Role */}
             {collegeSelected && !role && (
               <div className="grid grid-cols-2 gap-3">
-                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50" onClick={() => setRole('admin')}>
+                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition" onClick={() => setRole('admin')}>
                   <CardContent className="flex flex-col items-center p-5">
-                    <Shield className="w-9 h-9 text-primary mb-2" />
+                    <Shield className="w-9 h-9 text-primary-foreground mb-2" />
                     <h3 className="font-semibold text-sm">Admin</h3>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50" onClick={() => setRole('faculty')}>
+                <Card className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition" onClick={() => setRole('faculty')}>
                   <CardContent className="flex flex-col items-center p-5">
-                    <Users className="w-9 h-9 text-primary mb-2" />
+                    <Users className="w-9 h-9 text-primary-foreground mb-2" />
                     <h3 className="font-semibold text-sm">Faculty</h3>
                   </CardContent>
                 </Card>
               </div>
             )}
 
-            {/* Admin */}
-            {role === 'admin' && adminStep === 1 && (
+            {role === 'admin' && (
               <>
-                <div className="space-y-2">
-                  <Label>Branch</Label>
-                  <Select value={adminBranch} onValueChange={setAdminBranch}>
-                    <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
-                    <SelectContent>
-                      {branches.length === 0 ? (
-                        <SelectItem value="none" disabled>No branches yet</SelectItem>
-                      ) : branches.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="w-full" onClick={() => {
-                  if (!adminBranch) { toast.error('Select a branch'); return; }
-                  setAdminStep(2);
-                }}>Next</Button>
-              </>
-            )}
-
-            {role === 'admin' && adminStep === 2 && (
-              <>
-                <p className="text-xs text-center text-muted-foreground">
-                  Branch: {branches.find(b => b.id === adminBranch)?.name}
-                </p>
                 <div className="space-y-2">
                   <Label>User ID</Label>
                   <Input value={adminUserId} onChange={(e) => setAdminUserId(e.target.value)} placeholder="Admin User ID" />
                 </div>
                 <div className="space-y-2">
                   <Label>Password</Label>
-                  <Input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="••••••••" />
+                  <Input type="password" value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)} placeholder="••••••••" />
                 </div>
-                <Button className="w-full" onClick={handleAdminLogin} disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In as Admin'}
+                <Button className="w-full rounded-xl" onClick={handleAdminLogin} disabled={loading}>
+                  {loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in...</>) : 'Sign In as Admin'}
                 </Button>
               </>
             )}
 
-            {/* Faculty */}
             {role === 'faculty' && (
               <>
                 <div className="space-y-2">
                   <Label>Faculty Unique ID</Label>
-                  <Input value={facultyCode} onChange={(e) => setFacultyCode(e.target.value.toUpperCase())} placeholder="Faculty Unique ID" />
+                  <Input value={facultyCode}
+                    onChange={(e) => setFacultyCode(e.target.value.toUpperCase())} placeholder="Faculty Unique ID" />
                 </div>
                 <div className="space-y-2">
                   <Label>Password</Label>
-                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                  <Input type="password" value={password}
+                    onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
                 </div>
-                <Button className="w-full" onClick={handleFacultyLogin} disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
+                <Button className="w-full rounded-xl" onClick={handleFacultyLogin} disabled={loading}>
+                  {loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in...</>) : 'Sign In'}
                 </Button>
               </>
             )}

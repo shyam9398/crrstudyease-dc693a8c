@@ -2,130 +2,130 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Premium beige design system. All colors HSL. */
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    --background: 42 67% 98%;            /* #FFFDF7 */
+    --foreground: 30 19% 19%;            /* #3A3126 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 42 67% 99%;
+    --card-foreground: 30 19% 19%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 42 67% 99%;
+    --popover-foreground: 30 19% 19%;
 
-    --primary: 160 84% 39%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 38 50% 81%;               /* #E8D8B5 */
+    --primary-foreground: 30 30% 18%;
 
-    --secondary: 160 30% 92%;
-    --secondary-foreground: 160 50% 20%;
+    --secondary: 38 60% 88%;             /* #F3E6CC */
+    --secondary-foreground: 30 30% 18%;
 
-    --muted: 160 20% 92%;
-    --muted-foreground: 160 10% 40%;
+    --muted: 40 50% 94%;
+    --muted-foreground: 30 15% 40%;
 
-    --accent: 46 92% 55%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 42 75% 91%;                /* #F8EED8 */
+    --accent-foreground: 30 30% 18%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 160 84% 39%;
+    --border: 38 40% 86%;
+    --input: 38 40% 88%;
+    --ring: 38 50% 70%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --success: 142 76% 36%;
+    --success: 142 50% 42%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 80% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-background: 42 67% 97%;
+    --sidebar-foreground: 30 19% 19%;
+    --sidebar-primary: 38 50% 70%;
+    --sidebar-primary-foreground: 30 30% 18%;
+    --sidebar-accent: 42 60% 92%;
+    --sidebar-accent-foreground: 30 30% 18%;
+    --sidebar-border: 38 40% 86%;
+    --sidebar-ring: 38 50% 70%;
 
-    /* Custom semantic tokens */
-    --faculty: 262 83% 58%;
+    --faculty: 268 50% 55%;
     --faculty-foreground: 0 0% 100%;
-    --student: 199 89% 48%;
+    --student: 200 60% 48%;
     --student-foreground: 0 0% 100%;
-    --progress: 142 76% 36%;
+    --progress: 142 50% 42%;
     --progress-foreground: 0 0% 100%;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 30 12% 10%;
+    --foreground: 42 50% 94%;
 
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
+    --card: 30 12% 14%;
+    --card-foreground: 42 50% 94%;
 
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 30 12% 14%;
+    --popover-foreground: 42 50% 94%;
 
-    --primary: 160 84% 44%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 38 50% 70%;
+    --primary-foreground: 30 30% 14%;
 
-    --secondary: 160 20% 20%;
-    --secondary-foreground: 160 60% 85%;
+    --secondary: 30 15% 22%;
+    --secondary-foreground: 42 50% 94%;
 
-    --muted: 160 15% 20%;
-    --muted-foreground: 160 15% 60%;
+    --muted: 30 12% 20%;
+    --muted-foreground: 42 25% 70%;
 
-    --accent: 46 92% 55%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 38 35% 28%;
+    --accent-foreground: 42 50% 94%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 160 84% 44%;
+    --border: 30 12% 22%;
+    --input: 30 12% 22%;
+    --ring: 38 50% 60%;
 
-    --success: 142 76% 36%;
+    --success: 142 50% 42%;
     --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
+    --warning: 38 80% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-background: 30 12% 8%;
+    --sidebar-foreground: 42 50% 94%;
+    --sidebar-primary: 38 50% 70%;
+    --sidebar-primary-foreground: 30 30% 14%;
+    --sidebar-accent: 30 15% 18%;
+    --sidebar-accent-foreground: 42 50% 94%;
+    --sidebar-border: 30 12% 22%;
+    --sidebar-ring: 38 50% 60%;
 
-    --faculty: 262 83% 58%;
+    --faculty: 268 50% 65%;
     --faculty-foreground: 0 0% 100%;
-    --student: 199 89% 48%;
+    --student: 200 60% 58%;
     --student-foreground: 0 0% 100%;
-    --progress: 142 76% 36%;
+    --progress: 142 50% 50%;
     --progress-foreground: 0 0% 100%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
-  html {
-    overflow-x: hidden;
-  }
-
+  * { @apply border-border; }
+  html { overflow-x: hidden; }
   body {
     @apply bg-background text-foreground;
     overflow-x: hidden;
+    background-image:
+      radial-gradient(at 10% 0%, hsl(var(--accent) / 0.6) 0px, transparent 50%),
+      radial-gradient(at 90% 100%, hsl(var(--secondary) / 0.5) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/70 backdrop-blur-xl border border-border/60 shadow-[0_10px_40px_-15px_hsl(30_19%_19%/0.15)];
   }
 }
